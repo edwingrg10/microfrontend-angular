@@ -1,0 +1,45 @@
+stages:
+- build
+- deploy
+
+build_master:
+  stage: build
+  image: node:18
+  script:
+    - npm install -g @angular/cli
+    - npm install
+    - sed -i 's/<base href="\/">/<base href="">/' src/index.html  # Cambiamos la línea en index.html
+    - ng build --configuration=production
+  artifacts:
+    paths:
+      - dist/
+
+build_cursos:
+  stage: build
+  image: node:18
+  script:
+    - npm install -g @angular/cli
+    - npm install
+    - sed -i 's/<base href="\/">/<base href="">/' src/index.html  # Cambiamos la línea en index.html
+    - ng build cursos --configuration=production
+  artifacts:
+    paths:
+      - dist/
+
+deploy_master:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - apk add --no-cache lftp
+    - lftp -c "open -u $FTP_USER,$FTP_PASSWORD $FTP_HOST; rm -rf /Front/*; mirror -R ./dist/microfrontend-master/ /Front"
+  only:
+    - main  # Este job se ejecutará solo en la rama 'main'
+
+deploy_cursos:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - apk add --no-cache lftp
+    - lftp -c "open -u $FTP_USER,$FTP_PASSWORD $FTP_HOST; rm -rf /Front/cursos/*; mirror -R ./dist/cursos/ /Front/cursos"
+  only:
+    - cursos  # Este job se ejecutará solo en la rama 'cursos'
